@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Scrambled Image Puzzle</title>
+  <style>
+    /* Basic Reset & Simple Page Style */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      width: 100%;
+      height: 100vh;
+      background: #f0f0f0;
+      position: relative; /* So we can position absolutely within it */
+      font-family: Arial, sans-serif;
+    }
+
+    /* Each puzzle piece style */
+    .puzzle-piece {
+      position: absolute;
+      border: 2px solid #444;
+      cursor: grab;
+      touch-action: none; /* Important for touch devices: prevents scrolling while dragging */
+    }
+    .puzzle-piece:active {
+      cursor: grabbing;
+    }
+  </style>
+</head>
+<body>
+
+<script>
+  /*******************************************************
+   * 1. LOAD IMAGE
+   *******************************************************/
+  const imagePath = "https://i.imgur.com/AFYGXP7.jpeg";
+
+  const img = new Image();
+  img.crossOrigin = "anonymous"; // If using a public image that supports CORS
+  img.src = imagePath;
+
+  img.onload = function() {
+    // Once image is fully loaded, create puzzle pieces
+    createPuzzlePieces(img);
+  };
+
+  /*******************************************************
+   * 2. SPLIT IMAGE INTO UNEQUAL PIECES AND RENDER
+   *******************************************************/
+  function createPuzzlePieces(loadedImage) {
+    const totalPieces = 5;
+    const imageWidth = loadedImage.width;
+    const imageHeight = loadedImage.height;
+
+    // Define the pieces' dimensions and positions
+    const pieces = [
+      { x: 0, y: 0, width: imageWidth * 0.4, height: imageHeight * 0.5 },
+      { x: imageWidth * 0.4, y: 0, width: imageWidth * 0.6, height: imageHeight * 0.3 },
+      { x: 0, y: imageHeight * 0.5, width: imageWidth * 0.5, height: imageHeight * 0.5 },
+      { x: imageWidth * 0.5, y: imageHeight * 0.3, width: imageWidth * 0.5, height: imageHeight * 0.4 },
+      { x: imageWidth * 0.5, y: imageHeight * 0.7, width: imageWidth * 0.5, height: imageHeight * 0.3 }
+    ];
+
+    pieces.forEach(piece => {
+      // Create a canvas to hold each piece
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+
+      // Set canvas dimensions to match the piece
+      canvas.width = piece.width;
+      canvas.height = piece.height;
+
+      // Draw onto the piece
+      ctx.drawImage(
+        loadedImage,
+        piece.x,           // Source X
+        piece.y,           // Source Y
+        piece.width,       // Source width
+        piece.height,      // Source height
+        0,                 // Destination X
+        0,                 // Destination Y
+        piece.width,       // Destination width
+        piece.height       // Destination height
+      );
+
+      // Convert canvas to data URL
+      const pieceDataURL = canvas.toDataURL("image/png");
+
+      // Create a puzzle piece DOM element
+      const pieceElem = document.createElement("div");
+      pieceElem.className = "puzzle-piece";
+      pieceElem.style.width = `${piece.width}px`;
+      pieceElem.style.height = `${piece.height}px`;
+      pieceElem.style.backgroundImage = `url('${pieceDataURL}')`;
+      pieceElem.style.backgroundSize = `${piece.width}px ${piece.height}px`;
+
+      // Randomly position the piece anywhere on the viewport
+      const randomX = Math.random() * (window.innerWidth - piece.width);
+      const randomY = Math.random() * (window.innerHeight - piece.height);
+      pieceElem.style.left = `${randomX}px`;
+      pieceElem.style.top = `${randomY}px`;
+
+      // Add to body
+      document.body.appendChild(pieceElem);
+
+      // Add drag functionality
+      addDragEvents(pieceElem);
+    });
+  }
+
+  /*******************************************************
+   * 3. DRAG & DROP FUNCTIONALITY (Supports Mouse & Touch)
+   *******************************************************/
+  function addDragEvents(pieceElem) {
+    let offsetX = 0, offsetY = 0;
+    let isDragging = false;
+
+    pieceElem.addEventListener("pointerdown", (e) => {
+      isDragging = true;
+      offsetX = e.clientX - parseFloat(pieceElem.style.left);
+      offsetY = e.clientY - parseFloat(pieceElem.style.top);
+
+      pieceElem.setPointerCapture(e.pointerId);
+    });
+
+    pieceElem.addEventListener("pointermove", (e) => {
+      if (!isDragging) return;
+      const newX = e.clientX - offsetX;
+      const newY = e.clientY - offsetY;
+      pieceElem.style.left = newX + "px";
+      pieceElem.style.top = newY + "px";
+    });
+
+    pieceElem.addEventListener("pointerup", (e) => {
+      isDragging = false;
+      pieceElem.releasePointerCapture(e.pointerId);
+    });
+
+    pieceElem.addEventListener("pointercancel", () => {
+      isDragging = false;
+    });
+  }
+</script>
+
+</body>
+</html>
